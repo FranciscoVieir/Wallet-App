@@ -7,6 +7,7 @@ import {
   ActivityIndicator,
   TextInput,
   TouchableOpacity,
+  Keyboard,
 } from 'react-native';
 import {PickerItem} from './src/Picker';
 import {api} from './src/Services/api';
@@ -15,6 +16,11 @@ function App() {
   const [isLoading, setIsloading] = useState(true);
   const [coins, setCoins] = useState([]);
   const [selectedCoin, setSelectedCoin] = useState(null);
+
+  const [moedaBValor, setMoedaBValor] = useState('');
+
+  const [coinValue, setCoinValue] = useState(null);
+  const [convertedValue, setConvertedValue] = useState(0);
 
   useEffect(() => {
     async function loadMoedas() {
@@ -35,6 +41,27 @@ function App() {
 
     loadMoedas();
   }, []);
+
+  async function toConvert() {
+    if (moedaBValor === 0 || moedaBValor === '' || selectedCoin === null) {
+      return;
+    }
+
+    const response = await api.get(`/all/${selectedCoin}-BRL`);
+    console.log(response.data[selectedCoin].ask);
+
+    let resultado = response.data[selectedCoin].ask * parseFloat(moedaBValor);
+
+    setConvertedValue(
+      `${resultado.toLocaleString('pt-BR', {
+        style: 'currency',
+        currency: 'BRL',
+      })}`,
+    );
+    setCoinValue(moedaBValor);
+
+    Keyboard.dismiss();
+  }
 
   if (isLoading) {
     return (
@@ -61,12 +88,30 @@ function App() {
           placeholder="EX: 1.50"
           style={styles.input}
           keyboardType="numeric"
+          value={moedaBValor}
+          onChangeText={value => setMoedaBValor(value)}
         />
       </View>
 
-      <TouchableOpacity style={styles.buttonArea}>
+      <TouchableOpacity style={styles.buttonArea} onPress={toConvert}>
         <Text style={styles.textButton}>Converter</Text>
       </TouchableOpacity>
+
+      {convertedValue !== 0 && (
+        <View style={styles.areaResult}>
+          <Text style={styles.convertedValue}>
+            {coinValue} {selectedCoin}
+          </Text>
+
+          <Text
+            // eslint-disable-next-line react-native/no-inline-styles
+            style={{fontSize: 18, margin: 8, color: '#000'}}>
+            corresponde a:
+          </Text>
+
+          <Text style={styles.convertedValue}>{convertedValue}</Text>
+        </View>
+      )}
     </View>
   );
 }
@@ -123,6 +168,20 @@ const styles = StyleSheet.create({
     color: '#000',
     fontWeight: 'bold',
     fontSize: 16,
+  },
+  areaResult: {
+    width: '90%',
+    backgroundColor: '#fff',
+    marginTop: 34,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 24,
+  },
+  convertedValue: {
+    fontSize: 28,
+    color: '#000',
+    fontWeight: 'bold',
   },
 });
 
